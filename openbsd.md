@@ -87,3 +87,62 @@ Careful, this will possibly delete other data on your disk.
 # dd if=/dev/zero of=/dev/rsc0c bs=10m count=1
 ```
 
+## Format a USB HDD for use with dump(8)
+
+1. Plug the disk in, and find out what /dev/sd* device it's attached to with `dmesg`. You should see something like this:
+
+```
+umass0 at uhub0 port 5 configuration 1 interface 0 "ASMedia AS2115" rev 3.00/0.01 addr 2
+umass0: using SCSI over Bulk-Only
+scsibus2 at umass0: 2 targets, initiator 0
+sd1 at scsibus2 targ 1 lun 0: <ASMT, 2115, 0> SCSI4 0/direct fixed serial.174c1153000000000000
+sd1: 476940MB, 512 bytes/sector, 976773168 sectors
+```
+
+From here on, the disk will be referred to as `sd1`. Adjust the commands according to your setup.
+
+2. Prepare an MBR sector on the disk
+
+```
+# fdisk -iy sd1
+```
+
+If you still have the default MBR template, your disk will be one big OpenBSD partition. Check this with `fdisk`
+
+```
+# fdisk sd1
+Disk: sd1       geometry: 60801/255/63 [976773168 Sectors]
+Offset: 0       Signature: 0xAA55
+            Starting         Ending         LBA Info:
+ #: id      C   H   S -      C   H   S [       start:        size ]
+-------------------------------------------------------------------------------
+ 0: 00      0   0   0 -      0   0   0 [           0:           0 ] unused
+ 1: 00      0   0   0 -      0   0   0 [           0:           0 ] unused
+ 2: 00      0   0   0 -      0   0   0 [           0:           0 ] unused
+*3: A6      0   1   2 -  60800 254  63 [          64:   976768001 ] OpenBSD
+
+```
+
+Then follow the instructions at https://www.openbsd.org/faq/faq14.html#softraidCrypto to encrypt the disk as needed.
+
+
+## Mount an encrypted backup disk
+
+Create the mount directory if it doesn't exist yet.
+
+```
+# mkdir -p /mnt/encrypted_removable
+```
+
+Mount the drive. Note the distinction between the physical drive, and the encrypted drive.
+
+```
+# bioctl -c C -l sd1a softraid0
+> passphrase
+```
+
+Now the software encrypted disk should be ready to be mounted.
+
+```
+# mount /dev/sd3i /mnt/encrypted_removable
+```

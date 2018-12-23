@@ -146,3 +146,10 @@ Now the software encrypted disk should be ready to be mounted.
 ```
 # mount /dev/sd3i /mnt/encrypted_removable
 ```
+
+## Troubleshooting
+
+### mount: invalid argument
+
+If you just created the partition and the label, did you also run `newfs`?
+See https://www.openbsd.org/faq/faq14.html#softraidCrypto

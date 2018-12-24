@@ -130,20 +130,20 @@ Then follow the instructions at https://www.openbsd.org/faq/faq14.html#softraidC
 
 Create the mount directory if it doesn't exist yet.
 
-```
+```ksh
 # mkdir -p /mnt/encrypted_removable
 ```
 
 Mount the drive. Note the distinction between the physical drive, and the encrypted drive.
 
-```
+```ksh
 # bioctl -c C -l sd1a softraid0
 > passphrase
 ```
 
 Now the software encrypted disk should be ready to be mounted.
 
-```
+```ksh
 # mount /dev/sd3i /mnt/encrypted_removable
 ```
 
@@ -153,3 +153,41 @@ Now the software encrypted disk should be ready to be mounted.
 
 If you just created the partition and the label, did you also run `newfs`?
 See https://www.openbsd.org/faq/faq14.html#softraidCrypto
+
+## Hardening
+
+### SSH
+
+First of all, copy over your public key with `ssh-copy-id`.
+Then modify the sshd_config file with the following:
+
+```
+PermitRootLogin no
+PasswordAuthentication no
+```
+
+You may also chose to restrict SSH access to certain users.
+
+```
+AllowUsers <username>
+```
+
+If your server is internet-facing, it could also be useful to change the SSH port. It won't save you if your server is really targeted, but most bot scans will skip the port.
+Just pick any random port above between 1025 and 65535.
+
+```
+Port <random port>
+```
+
+Don't forget to allow that port in the firewall, and don't forget which port it is.
+
+Run [ssh-audit](https://github.com/arthepsy/ssh-audit) to check for other vulnerabilities and recommendations. Keep at it until it's all green.
+
+This should be a good starting point:
+```
+KexAlgorithms curve25519-sha256@libssh.org,diffie-hellman-group16-sha512,diffie-hellman-group18-sha512,diffie-hellman-group14-sha256
+HostKeyAlgorithms rsa-sha2-512,rsa-sha2-256,ssh-rsa,ssh-ed25519
+MACs hmac-sha2-512-etm@openssh.com,hmac-sha2-256-etm@openssh.com,umac-128-etm@openssh.com
+```
+
+Once you're done configuring, apply with `rcctl reload sshd`. Make sure to try opening a new session before closing your existing session.
